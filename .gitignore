@@ -1,0 +1,16 @@
+# Ignore results directory
+results/
+
+# Ignore databases directories
+resources/dbcan/
+resources/interproscan-*/
+
+# Ignore notebooks
+OphiAURTHO.md
+notebook.md
+
+# Ignore snakemake metadata
+.snakemake/
+
+# Ignore temp directory
+temp/

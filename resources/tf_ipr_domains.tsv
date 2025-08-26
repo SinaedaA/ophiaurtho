@@ -1,0 +1,23 @@
+Family_name	Short_name	Family_description	Domain_name	InterPro	Pfam
+ArgR	ArgR	arginine repressor C-terminal domain	Arg_repressor_C, Arg_repress_C, Arg_repress_C_sf, Arg_repress_DNA-bd	IPR020899	PF02863
+Fur	Fur	Fur C-terminal domain	Fur_C, FUR	IPR043135	PF01475
+TetR/AcrR	TetR	TetR/AcrR transcriptional repressor, C-terminal domain	TetR_C_44, TetR/AcrR_C	IPR049444	PF21776
+LysR	LysR	HTH_1, Tscrpt_reg_HTH_LysR	IPR000847	PF00126
+SinR	SinR	SinR repressor/SinI anti-repressor, dimerisation domain	HTH_3	IPR001387	PF01381
+AraC/XylS	AraC	AraC/XylS family transcriptional regulators	HTH_8, AraC_XylS_family_regulators	IPR050204	PF12833
+GntR	GntR	Bacterial regulatory proteins, gntR family, Transcription regulator HTH, GntR	GntR, Tscrpt_reg_HTH_GntR	IPR000524	PF00392
+GerE/LuxR	LuxR	Transcription regulator LuxR, C-terminal, Bacterial regulatory proteins, luxR family	GerE, Tscrpt_reg_LuxR_C	IPR000792	PF00196
+PhoB	PhoB	OmpR/PhoB-type DNA-binding domain, Transcriptional regulatory protein, C terminal	OmpR/PhoB-type_DNA-bd, Trans_reg_C	IPR001867	PF00486
+MarR	MarR	MarR family, MarR-type HTH domain	MarR, HTH_MarR-typ	IPR000835	PF01047
+AsnC/Lrp	AsnC	AsnC-type HTH domain	AsnC-type_HTH_dom	IPR000485	PF13404
+Fis	Fis	DNA binding HTH domain, Fis-type, Bacterial regulatory protein, Fis family	HTH_Fis, HTH_8	IPR002197	PF02954
+LacI/GalR	LacI	LacI-type HTH domain	HTH_LacI	IPR000843	PF00356
+ArsR	ArsR	HTH ArsR-type DNA-binding domain	HTH_ArsR_DNA-bd_domain	IPR001845	PF01022
+Crp	Crp	Crp-type HTH domain	HTH_CRP	IPR012318	PF13545,PF00325
+IclR	IclR	Transcription regulator IclR, N-terminal	Tscrpt_reg_IclR_N	IPR005471	PF09339
+BirA	BirA	Biotin operon repressor, helix-turn-helix domain	Biotin_operon_repress_HTH	IPR004409	
+LexA	LexA	LexA repressor, DNA-binding domain	LexA_DNA-bd_dom	IPR006199	PF01726
+TrmB	TrmB	Transcription regulator TrmB, N-terminal	Tscrpt_reg_TrmB_N, TrmB	IPR002831	PF01978
+TetR/AcrR	TetR	DNA-binding HTH domain, TetR-type	HTH_TetR	IPR001647	PF00440
+PadR	PadR	Transcription regulator PadR, N-terminal	Tscrpt_reg_PadR_N	IPR005149	/
+DeoR	DeoR	DeoR-type HTH domain	DeoR_HTH	IPR001034	PF08220
