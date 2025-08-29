@@ -49,15 +49,17 @@ def get_dbcan_output(wildcards):
 rule all:
     input:
         "results/.cds_faa_created",
-        get_dbcan_output,
-        "results/proteinortho/.snakemake_validate",
-        "results/proteinortho/.snakemake_transform_validate",
-        "results/proteinortho/.snakemake_grab_proteins_validate",
-        "results/interproscan/.all_iprscan_done",
-        "results/tf_data/.classify_tfs_done",
-        "results/tf_data/.extract_upstream_regions_done",
-        "results/tf_data/.all_meme_done",
-        "results/dbcan_tf/.dbcan_tf_integrated"
+        #get_dbcan_output,
+        "results/.all_dbcan_done",
+        # "results/proteinortho/.snakemake_validate",
+        # "results/proteinortho/.snakemake_transform_validate",
+        # "results/proteinortho/.snakemake_grab_proteins_validate",
+        "results/.all_cogs_renamed",
+        "results/.all_iprscan_done",
+        "results/.classify_tfs_done",
+        "results/.extract_upstream_regions_done",
+        "results/.all_meme_done",
+        "results/.dbcan_tf_integrated"
 
 # -------------------------------- #
 # ------- Download genomes ------- #
@@ -135,7 +137,7 @@ rule make_gff_db:
         assembly_info_path,
         "results/.symlinks_created"
     output:
-        touch("results/cds_gff/.gff_db_created")
+        touch("results/.gff_db_created")
     conda:
         "workflow/envs/aurtho.yml"
     shell:
@@ -166,7 +168,7 @@ if system == "Darwin":
         input:
             ipr_validate_inputs
         output:
-            "results/interproscan/.all_iprscan_done"
+            "results/.all_iprscan_done"
         shell:
             "touch {output}"
 
@@ -190,6 +192,14 @@ rule run_dbcan:
         "--db_dir resources/dbcan/db/ "
         "--gff_type NCBI_prok "
         "--input_gff {input.gff} "
+
+rule validate_dbcan:
+    input:
+        get_dbcan_output
+    output:
+        "results/.all_dbcan_done"
+    shell:
+        "touch {output}"
 
 # ---------------------------- #
 # ------- Proteinortho ------- #
@@ -264,11 +274,14 @@ rule rename_orthogroup_fastas:
     shell:
         "mv {input.src} {output.dest}"
 
-rule validate_renaming:
+rule validate_cog_renaming:
     input:
+        "results/proteinortho/.snakemake_validate",
+        "results/proteinortho/.snakemake_transform_validate",
+        "results/proteinortho/.snakemake_grab_proteins_validate",
         expand("results/proteinortho/cog/OrthoGroup{group}.fasta", group=get_orthogroups)
     output:
-        "results/proteinortho/cog/.all_renamed.done"
+        "results/.all_cogs_renamed"
     shell:
         "touch {output}"
 
@@ -293,10 +306,10 @@ rule validate_renaming:
 
 rule classify_ipr_tfs:
     input:
-        ipr_validate="results/interproscan/.all_iprscan_done",
-        cogs_renamed="results/proteinortho/cog/.all_renamed.done"
+        ipr_validate="results/.all_iprscan_done",
+        cogs_renamed="results/.all_cogs_renamed"
     output:
-        validate=touch("results/tf_data/.classify_tfs_done")
+        validate=touch("results/.classify_tfs_done")
     conda:
         "workflow/envs/aurtho.yml"
     params:
@@ -310,8 +323,8 @@ rule classify_ipr_tfs:
 
 rule extract_upstream_regions:
     input:
-        "results/cds_gff/.gff_db_created",
-        tf_validate="results/tf_data/.classify_tfs_done"
+        "results/.gff_db_created",
+        tf_validate="results/.classify_tfs_done"
     output:
         validate=touch("results/tf_data/{tf}/.ups_done_{length}"), # when I use temp(), I need to ensure that the file is created in the shell command with touch
         logs=os.path.join("results/tf_data/{tf}/upstream_{length}.log")
@@ -336,7 +349,7 @@ rule validate_extract_ups:
     input:
         expand("results/tf_data/{tf}/.ups_done_{length}", tf=tf_families_list, length=ups_lengths)
     output:
-        "results/tf_data/.extract_upstream_regions_done"
+        "results/.extract_upstream_regions_done"
     shell:
         "touch {output}"
 
@@ -345,7 +358,7 @@ rule validate_extract_ups:
 # ------------------------ #
 rule run_meme:
     input:
-        ups_validate="results/tf_data/.extract_upstream_regions_done"
+        ups_validate="results/.extract_upstream_regions_done"
         #tf_ups_files=lambda wildcards: f"results/tf_data/{wildcards.tf}/upstream/{wildcards.meme_target}_upstream_{wildcards.length}.fasta"
     output:
         validate=temp("results/tf_data/{tf}/meme/.meme_done_{motif_length}_{meme_mode}") # when I use temp(), I need to ensure that the file is created in the shell command with touch
@@ -364,7 +377,7 @@ rule validate_meme:
                motif_length=meme_lengths,
                meme_mode=meme_modes)
     output:
-        "results/tf_data/.all_meme_done"
+        "results/.all_meme_done"
     shell:
         "touch {output}"
 
@@ -374,9 +387,9 @@ rule validate_meme:
 rule integrate_dbcan_tf:
     input:
         dbcan_done=get_dbcan_output,
-        tf_validate="results/tf_data/.classify_tfs_done"
+        tf_validate="results/.classify_tfs_done"
     output:
-        outfile=touch("results/dbcan_tf/.dbcan_tf_integrated")
+        outfile=touch("results/.dbcan_tf_integrated")
     conda:
         "workflow/envs/aurtho.yml"
     params:
