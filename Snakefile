@@ -172,6 +172,30 @@ if system == "Darwin":
         shell:
             "touch {output}"
 
+if system == "Linux":
+    rule interproscan:
+        threads: 4
+        input:
+            "results/.symlinks_created",
+            faa="results/cds_faa/{strain}.cds.faa"
+        output:
+            tsv="results/interproscan/{strain}.tsv"
+        params:
+            #cpus=config["ipr_cpu"] or 4,
+            applications=config["ipr_appl"]
+        shell:
+            "mkdir -p results/interproscan && "
+            "export JAVA_OPTS='-Xmx8G' && "  # Limit to 8GB RAM
+            "./resources/interproscan/interproscan.sh --input {input.faa} -appl {params.applications} -f tsv -o {output.tsv} --cpu {threads} --disable-precalc"
+
+    rule validate_iprscan:
+        input:
+            ipr_validate_inputs
+        output:
+            "results/.all_iprscan_done"
+        shell:
+            "touch {output}"
+
 # --------------------- #
 # ------- dbCAN ------- #
 # --------------------- #

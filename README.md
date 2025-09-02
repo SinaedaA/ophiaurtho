@@ -1,10 +1,57 @@
 ## Introduction
 
 ## 1. Dependencies
+### 1.1. Mamba or similar python environment manager
+I personally work with mamba, because environment resolution is faster, and errors are clearer when they appear. But this should work with micromamba, conda, miniconda, etc. 
+
+### 1.2. Installing Snakemake
+The only environment and package you need to install is snakemake itself. The other environment requirements for the different steps of the pipeline are taken care of by snakemake. 
+```bash
+mamba create -c conda-forge -c bioconda -n snakemake snakemake
+mamba activate snakemake
+```
+
+### 1.3. Clone this repository locally
+You can do this using `git` or `gh`. 
+
+```bash
+## move to the directory where you want to clone it
+cd ~/Documents/snakemake
+## using git
+git clone https://github.com/SinaedaA/ophiaurtho.git
+## using gh
+gh repo clone SinaedaA/ophiaurtho
+## go into that directory
+cd ophiaurtho
+```
+Both of these commands should have the same effect: create a directory called ophiaurtho, containing everything that is necessary to run the pipeline. 
+
+### 1.4. MacOS specific dependencies
+For the Interproscan database download, we need md5sum to check the accuracy of the downloaded data, and this is not basally installed on MacOS. It is however included in the `brew` package `coreutils`, which you can download like this:
+
+```bash
+brew install coreutils
+```
+
+### 1.4. Download databases
+The pipeline depends on **dbCAN** and **InterProScan**, for which we need to download external databases. The first step is thus to create those and get them locally on your machine. There is a snakemake rule for this as well: 
+
+```bash
+snakemake -s workflow/rules/databases.smk --cores 8 --use-conda --rerun-incomplete
+```
+
+**Note**: if your machine runs on Linux, this rule will also install a local InterProScan version. 
+
+### 1.5. InterProScan installation (MacOS)
+InterProScan is only available for Linux machines (and is installed on Linux during in 1.4.). However, using a docker image, we can run it on Darwin as well. Therefore, for portability, InterProScan is always run through the docker image. Full preparation for the InterProScan docker install are found here: ./InterProScan_MacOS.md. 
 
 ## 2. Simple snakemake run
 The simplest way to run ophiaurtho, is like this:
 ```bash
+## Linux
+snakemake --configfile config/config.yml --config max_genomes=10 --cores 8 --use-conda
+
+## macOS (add apptainer arguments, to run InterProScan)
 snakemake --configfile config/config.yml --config max_genomes=10 --cores 8 --use-conda --use-apptainer --apptainer-args "--bind $PWD/resources/interproscan/db/interproscan-5.75-106.0/data:/opt/interproscan/data"
 ```
 
@@ -13,8 +60,8 @@ Here's a breakdown of each argument.
 - `--config max_genomes=10` indicates to snakemake that it should disregard the max number of downloaded genomes specified in the config file, and take 10 instead. Note: using only 10 genomes of the same genus in this type of comparative genomics approach does limit its predictive power. The more genomes are used, the better the predictions, but also, the longer the pipeline will take to run. 
 - `--cores 8` indicates that the pipeline can parallelize 8 jobs, if each job uses only 1 thread (more on this in 5. Optimizing run time).
 - `--use-conda` tells snakemake to use the specified conda environments (specified in each rule, when applicable). 
-- `--use-apptainer` : similar, but for the docker image of Interproscan. 
-- `--apptainer-args` : specifies additional arguments for apptainer, in this case, how to name the interproscan database inside the image. 
+- `--use-apptainer` : similar, but for the docker image of Interproscan (only on macOS). 
+- `--apptainer-args` : specifies additional arguments for apptainer, in this case, how to name the interproscan database inside the image (only on macOS). 
 
 You can try this run. Note that Interproscan and dbCAN (but especially the former) take quite a while to run. If you have a lot of computing power, you can optimize the parallelization and the number of CPUs given to Interproscan, to speed up the run. It is by default kept to a conservative amount, in order to be able to run it on a laptop. 
 

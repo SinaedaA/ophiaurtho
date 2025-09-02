@@ -3,7 +3,7 @@ results/
 
 # Ignore databases directories
 resources/dbcan/
-resources/interproscan-*/
+resources/interproscan*/
 
 # Ignore notebooks
 OphiAURTHO.md
