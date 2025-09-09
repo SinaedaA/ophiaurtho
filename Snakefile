@@ -1,16 +1,23 @@
 import os
 import glob
 import platform
+from datetime import datetime
 
+## System check
 system = platform.system()  # Returns 'Linux', 'Darwin' (macOS), or 'Windows'
 print(f"Detected system: {system}")
 if system == "Windows":
     raise RuntimeError("This workflow is not supported on Windows. Please use Linux or macOS.")
 
+## Determine timestamp and output directory
+timestamp = config.get("timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
+outdir = f"results/{timestamp}"
+print(f"Output directory: {outdir}")
+
 # ---------------------- #
 # -- Global variables -- #
 # ---------------------- # 
-assembly_info_path = "results/genomes/assembly.info"
+assembly_info_path = f"{outdir}/genomes/assembly.info"
 project_name = config["proteinortho_project"]
 tf_families_list = config["tf_families"].split(",") if "tf_families" in config else []
 ups_lengths = config["upstream_region_length"] if "upstream_region_length" in config else 300
@@ -26,12 +33,12 @@ def get_strains(wildcards):
         return [line.strip() for line in f]
 
 def cds_faa_inputs(wildcards):
-    return expand("results/cds_faa/{strain}.cds.faa", strain=get_strains(wildcards))
+    return expand(f"{outdir}/cds_faa/{{strain}}.cds.faa", strain=get_strains(wildcards))
 def cds_gff_inputs(wildcards):
-    return expand("results/cds_gff/{strain}.cds.gff", strain=get_strains(wildcards))
+    return expand(f"{outdir}/cds_gff/{{strain}}.cds.gff", strain=get_strains(wildcards))
 
 def ipr_validate_inputs(wildcards):
-    return expand("results/interproscan/{strain}.tsv", strain=get_strains(wildcards))
+    return expand(f"{outdir}/interproscan/{{strain}}.tsv", strain=get_strains(wildcards))
 
 def get_dbcan_output(wildcards):
     """Function to get final outputs after checkpoint completes"""
@@ -41,42 +48,47 @@ def get_dbcan_output(wildcards):
     with open(checkpoint_output) as f:
         strains = [line.strip() for line in f]
     # Return the expanded output file paths, which will be evaluated in the rule all.
-    return expand("results/dbcan/{strain}/.dbcan_done", strain=strains)
+    return expand(f"{outdir}/dbcan/{{strain}}/.dbcan_done", strain=strains)
 
 # --------------- #
 # -- Main Rule -- #
 # --------------- #
 rule all:
     input:
-        "results/.cds_faa_created",
+        f"{outdir}/.cds_faa_created",
         #get_dbcan_output,
-        "results/.all_dbcan_done",
-        # "results/proteinortho/.snakemake_validate",
-        # "results/proteinortho/.snakemake_transform_validate",
-        # "results/proteinortho/.snakemake_grab_proteins_validate",
-        "results/.all_cogs_renamed",
-        "results/.all_iprscan_done",
-        "results/.classify_tfs_done",
-        "results/.extract_upstream_regions_done",
-        "results/.all_meme_done",
-        "results/.dbcan_tf_integrated"
+        f"{outdir}/.all_dbcan_done",
+        # f"{outdir}/proteinortho/.snakemake_validate",
+        # f"{outdir}/proteinortho/.snakemake_transform_validate",
+        # f"{outdir}/proteinortho/.snakemake_grab_proteins_validate",
+        f"{outdir}/.all_cogs_renamed",
+        f"{outdir}/.all_iprscan_done",
+        f"{outdir}/.classify_tfs_done",
+        f"{outdir}/.extract_upstream_regions_done",
+        f"{outdir}/.all_meme_done",
+        f"{outdir}/.dbcan_tf_integrated",
+        f"{outdir}/benchmarks/combined_benchmarks.tsv"
 
 # -------------------------------- #
 # ------- Download genomes ------- #
 # -------------------------------- #
 rule download_genomes:
     output:
-        assembly_info_path
+        assembly_info_path,
+        "benchmarks/download_genomes/benchmark.tsv"
     conda:
         "workflow/envs/aurtho.yml"
     params:
-        outdir="results/genomes",
+        outdir=f"{outdir}/genomes",
         genus=config["genus"],
         level=config["assemblylevel"],
         overwrite=config["overwrite"],
         db=config["download_genomes_db"],
         repo=config["repository"],
         max_genomes=config["max_genomes"]
+    benchmark:
+        f"{outdir}/benchmarks/download_genomes/benchmark.tsv"
+        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
         "python workflow/scripts/1_download_genomes.py "
         "--outdir {params.outdir} "
@@ -91,14 +103,15 @@ rule download_genomes:
 checkpoint find_strains:
     input:
         assembly_info_path,
-        "results/.symlinks_created"
+        f"{outdir}/.symlinks_created"
     output:
-        "results/strain_list.txt"
+        f"{outdir}/strain_list.txt"
     run:
-        strain_paths = glob.glob("results/genomes/GCF_*/[0-9]*.cds.faa")
+        strain_paths = glob.glob(f"{outdir}/genomes/GCF_*/[0-9]*.cds.faa")
+        #print(f"Strain paths: {strain_paths}")
         strain_ids = [os.path.basename(x).split(".")[0] for x in strain_paths]
         config["strains"] = strain_ids  # Update config
-        with open("results/strain_list.txt", "w") as out:
+        with open(f"{outdir}/strain_list.txt", "w") as out:
             for sid in strain_ids:
                 out.write(sid + "\n")
 
@@ -109,11 +122,14 @@ rule make_cds_faa_gff:
     input:
         assembly_info_path
     output:
-        touch("results/.cds_faa_created")
+        touch(f"{outdir}/.cds_faa_created")
     conda:
         "workflow/envs/aurtho.yml"
     params:
-        genome_dir="results/genomes"
+        genome_dir=f"{outdir}/genomes"
+    benchmark:
+        f"{outdir}/benchmarks/make_cds_faa_gff/benchmark.tsv"
+        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
         "python workflow/scripts/2_make_cds_faa_gff.py "
         "--infofile {input} "
@@ -123,25 +139,31 @@ rule make_cds_faa_gff:
 rule make_symlinks:
     input:
         assembly_info=assembly_info_path,
-        cds_faa_created="results/.cds_faa_created"
+        cds_faa_created=f"{outdir}/.cds_faa_created"
     output:
-        touch("results/.symlinks_created")
+        touch(f"{outdir}/.symlinks_created")
     params:
-        genome_dir="results/genomes"
+        genome_dir=f"{outdir}/genomes"
+    benchmark:
+        f"{outdir}/benchmarks/make_symlinks/benchmark.tsv"
+        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
-        "mkdir -p results/cds_faa results/cds_gff results/fna && "
+        f"mkdir -p {outdir}/cds_faa {outdir}/cds_gff {outdir}/fna && "
         "bash workflow/scripts/make_symlinks.sh {input.assembly_info} {params.genome_dir}"
 
 rule make_gff_db:
     input:
         assembly_info_path,
-        "results/.symlinks_created"
+        f"{outdir}/.symlinks_created"
     output:
-        touch("results/.gff_db_created")
+        touch(f"{outdir}/.gff_db_created")
     conda:
         "workflow/envs/aurtho.yml"
+    benchmark:
+        f"{outdir}/benchmarks/make_gff_db/benchmark.tsv"
+        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
-        "python workflow/scripts/make_gff_db.py --gff-dir results/cds_gff/"
+        f"python workflow/scripts/make_gff_db.py --gff-dir {outdir}/cds_gff/"
 
 # ------------------ #
 # -- Interproscan -- #
@@ -150,49 +172,55 @@ if system == "Darwin":
     rule interproscan:
         threads: 4
         input:
-            "results/.symlinks_created",
-            faa="results/cds_faa/{strain}.cds.faa"
+            f"{outdir}/.symlinks_created",
+            faa=f"{outdir}/cds_faa/{{strain}}.cds.faa"
         output:
-            tsv="results/interproscan/{strain}.tsv"
+            tsv=f"{outdir}/interproscan/{{strain}}.tsv"
         container:
             "docker://interpro/interproscan:5.75-106.0"
         params:
             #cpus=config["ipr_cpu"] or 4,
             applications=config["ipr_appl"]
+        benchmark:
+            f"{outdir}/benchmarks/interproscan/{strain}.tsv"
+            #repeat("benchmarks/somecommand/{sample}.tsv", 3)
         shell:
-            "mkdir -p results/interproscan && "
-            "export JAVA_OPTS='-Xmx8G' && "  # Limit to 8GB RAM
-            "/opt/interproscan/interproscan.sh --input {input.faa} -appl {params.applications} -f tsv -o {output.tsv} --cpu {threads} --disable-precalc"
+            f"mkdir -p {outdir}/interproscan && "
+            f"export JAVA_OPTS='-Xmx8G' && "  # Limit to 8GB RAM
+            f"/opt/interproscan/interproscan.sh --input {input.faa} -appl {params.applications} -f tsv -o {output.tsv} --cpu {threads} --disable-precalc"
 
     rule validate_iprscan:
         input:
             ipr_validate_inputs
         output:
-            "results/.all_iprscan_done"
+            validate=f"{outdir}/.all_iprscan_done"
         shell:
-            "touch {output}"
+            "touch {output.validate}"
 
 if system == "Linux":
     rule interproscan:
         threads: 4
         input:
-            "results/.symlinks_created",
-            faa="results/cds_faa/{strain}.cds.faa"
+            f"{outdir}/.symlinks_created",
+            faa=f"{outdir}/cds_faa/{{strain}}.cds.faa"
         output:
-            tsv="results/interproscan/{strain}.tsv"
+            tsv=f"{outdir}/interproscan/{{strain}}.tsv"
         params:
             #cpus=config["ipr_cpu"] or 4,
             applications=config["ipr_appl"]
+        benchmark:
+            f"{outdir}/benchmarks/interproscan/{strain}.tsv"
+            #repeat("benchmarks/somecommand/{sample}.tsv", 3)
         shell:
-            "mkdir -p results/interproscan && "
-            "export JAVA_OPTS='-Xmx8G' && "  # Limit to 8GB RAM
-            "./resources/interproscan/interproscan.sh --input {input.faa} -appl {params.applications} -f tsv -o {output.tsv} --cpu {threads} --disable-precalc"
+            f"mkdir -p {outdir}/interproscan && "
+            f"export JAVA_OPTS='-Xmx8G' && "  # Limit to 8GB RAM
+            f"./resources/interproscan/interproscan.sh --input {input.faa} -appl {params.applications} -f tsv -o {output.tsv} --cpu {threads} --disable-precalc"
 
     rule validate_iprscan:
         input:
             ipr_validate_inputs
         output:
-            "results/.all_iprscan_done"
+            f"{outdir}/.all_iprscan_done"
         shell:
             "touch {output}"
 
@@ -201,27 +229,31 @@ if system == "Linux":
 # --------------------- #
 rule run_dbcan:
     input:
-        "results/.symlinks_created",
-        faa="results/cds_faa/{strain}.cds.faa",
-        gff="results/cds_gff/{strain}.cds.gff"
+        f"{outdir}/.symlinks_created",
+        faa=f"{outdir}/cds_faa/{{strain}}.cds.faa",
+        gff=f"{outdir}/cds_gff/{{strain}}.cds.gff"
     output:
-        touch("results/dbcan/{strain}/.dbcan_done")  # Validation file per strain
+        touch(f"{outdir}/dbcan/{{strain}}/.dbcan_done")  # Validation file per strain
     conda:
         "workflow/envs/dbcan.yml"
+    benchmark:
+        f"{outdir}/benchmarks/dbcan/{strain}.tsv"
+        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
-        "run_dbcan easy_substrate --mode protein "
-        "--output_dir results/dbcan/{wildcards.strain} "
-        "--input_raw_data {input.faa} "
-        "--threads 8 "
-        "--db_dir resources/dbcan/db/ "
-        "--gff_type NCBI_prok "
-        "--input_gff {input.gff} "
+        f"run_dbcan easy_substrate --mode protein "
+        f"--output_dir {outdir}/dbcan/{{wildcards.strain}} "
+        f"--input_raw_data {input.faa} "
+        f"--threads 8 "
+        f"--db_dir resources/dbcan/db/ "
+        f"--gff_type NCBI_prok "
+        f"--input_gff {input.gff} "
 
 rule validate_dbcan:
     input:
         get_dbcan_output
     output:
-        "results/.all_dbcan_done"
+        f"{outdir}/.all_dbcan_done"
+        # if the interproscan concatenation of benchmark works, do it here as well
     shell:
         "touch {output}"
 
@@ -230,35 +262,44 @@ rule validate_dbcan:
 # ---------------------------- #
 rule run_proteinortho:
     input:
-        "results/.symlinks_created",
+        f"{outdir}/.symlinks_created",
         cds_faa=cds_faa_inputs  # Use function instead of glob
     output:
-        main_tsv=f"results/proteinortho/{project_name}.proteinortho.tsv",
-        info=f"results/proteinortho/{project_name}.info",
-        blast_graph=f"results/proteinortho/{project_name}.blast-graph",
-        graph=f"results/proteinortho/{project_name}.proteinortho-graph",
-        validate="results/proteinortho/.snakemake_validate"
+        main_tsv=f"{outdir}/proteinortho/{project_name}.proteinortho.tsv",
+        info=f"{outdir}/proteinortho/{project_name}.info",
+        blast_graph=f"{outdir}/proteinortho/{project_name}.blast-graph",
+        graph=f"{outdir}/proteinortho/{project_name}.proteinortho-graph",
+        html=f"{outdir}/proteinortho/{project_name}.proteinortho.html",
+        graph_summary=f"{outdir}/proteinortho/{project_name}.proteinortho-graph.summary",
+        validate=f"{outdir}/proteinortho/.snakemake_validate"
     conda:
         "workflow/envs/proteinortho.yml"
     params:
         cpus=config["proteinortho_cpu"]
+    benchmark:
+        f"{outdir}/benchmarks/proteinortho/run_benchmark.tsv"
+        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
-        "mkdir -p results/proteinortho && "
-        "proteinortho6.pl -project={project_name} -singles -cpus={params.cpus} -selfblast -verbose {input.cds_faa} && touch {output.validate}; "
-        "mv {project_name}.proteinortho.tsv {output.main_tsv}; mv {project_name}.proteinortho-graph {output.graph}; mv {project_name}.info {output.info}; mv {project_name}.blast-graph {output.blast_graph}"
+        f"mkdir -p {outdir}/proteinortho && "
+        f"proteinortho6.pl -project={project_name} -singles -cpus={params.cpus} -selfblast -verbose {input.cds_faa} && touch {output.validate}; "
+        f"mv {project_name}.proteinortho.tsv {output.main_tsv}; mv {project_name}.proteinortho-graph {output.graph}; mv {project_name}.info {output.info}; "
+        f"mv {project_name}.blast-graph {output.blast_graph}; mv {project_name}.proteinortho-graph.summary {output.graph_summary}; mv {project_name}.proteinortho.html {output.html};"
 
 rule transform_proteinortho:
     input:
         cds_faa=cds_faa_inputs,  # Use function instead of glob
-        main_tsv=f"results/proteinortho/{project_name}.proteinortho.tsv",
-        graph=f"results/proteinortho/{project_name}.proteinortho-graph"
+        main_tsv=f"{outdir}/proteinortho/{project_name}.proteinortho.tsv",
+        graph=f"{outdir}/proteinortho/{project_name}.proteinortho-graph"
     output:
-        graph_summary=f"results/proteinortho/{project_name}.proteinortho-graph.summary",
-        html=f"results/proteinortho/{project_name}.proteinortho.html",
-        xml=f"results/proteinortho/{project_name}.proteinortho.xml",
-        validate="results/proteinortho/.snakemake_transform_validate"
+        graph_summary=f"{outdir}/proteinortho/{project_name}.proteinortho-graph.summary",
+        html=f"{outdir}/proteinortho/{project_name}.proteinortho.html",
+        xml=f"{outdir}/proteinortho/{project_name}.proteinortho.xml",
+        validate=f"{outdir}/proteinortho/.snakemake_transform_validate"
     conda:
         "workflow/envs/proteinortho.yml"
+    benchmark:
+        f"{outdir}/benchmarks/proteinortho/transform_benchmark.tsv"
+        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
         "proteinortho_summary.pl '{input.graph}' > '{output.graph_summary}' && "
         "proteinortho2html.pl {input.main_tsv} {input.cds_faa} > {output.html} && "
@@ -268,15 +309,18 @@ rule transform_proteinortho:
 checkpoint grab_proteins:
     input:
         cds_faa=cds_faa_inputs,
-        main_tsv=f"results/proteinortho/{project_name}.proteinortho.tsv"
+        main_tsv=f"{outdir}/proteinortho/{project_name}.proteinortho.tsv"
     output:
-        validate="results/proteinortho/.snakemake_grab_proteins_validate"
+        validate=f"{outdir}/proteinortho/.snakemake_grab_proteins_validate"
     params:
         cpus=config["proteinortho_cpu"],
-        cog_dir=os.path.join("results/proteinortho", config["cog_directory"]),
+        cog_dir=os.path.join(f"{outdir}/proteinortho", config["cog_directory"]),
         min_prot=config["minimum_cog_size"]
     conda:
         "workflow/envs/proteinortho.yml"
+    benchmark:
+        f"{outdir}/benchmarks/proteinortho/grab_proteins_benchmark.tsv"
+        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
         "mkdir -p {params.cog_dir} && "
         "proteinortho_grab_proteins.pl -tofiles={params.cog_dir} "
@@ -284,28 +328,40 @@ checkpoint grab_proteins:
         "{input.main_tsv} {input.cds_faa} && "
         "touch {output.validate}"
 
+# def get_orthogroups(wildcards):
+#     """Dynamically get list of groups after grab_proteins completes"""
+#     return glob_wildcards(f"{outdir}/proteinortho/cog/{project_name}.proteinortho.tsv.OrthoGroup{{group}}.fasta")[1]
+
 def get_orthogroups(wildcards):
-    """Dynamically get list of groups after grab_proteins completes"""
-    return glob_wildcards("results/proteinortho/cog/{project_name}.proteinortho.tsv.OrthoGroup{group}.fasta")[1]
+    cog_dir = os.path.join(outdir, "proteinortho", "cog")
+    # Use the correct dynamic glob with your timestamped outdir
+    pattern = f"{cog_dir}/{project_name}.proteinortho.tsv.OrthoGroup*.fasta"
+    orthogroup_paths = glob.glob(pattern)
+    print(f"Orthogroup paths: {orthogroup_paths}")
+    # Extract group wildcard values from filenames
+    groups = [os.path.basename(f).split("OrthoGroup")[1].split(".fasta")[0] for f in orthogroup_paths]
+    #print(f"Groups: {groups}")
+    return groups
 
 rule rename_orthogroup_fastas:
     input:
         # define the input, by using the config value for the project name, as well as the group wildcard
-        src=lambda wildcards: f"results/proteinortho/cog/{config['proteinortho_project']}.proteinortho.tsv.OrthoGroup{wildcards.group}.fasta"
+        src=lambda wildcards: f"{outdir}/proteinortho/cog/{config['proteinortho_project']}.proteinortho.tsv.OrthoGroup{wildcards.group}.fasta"
     output:
-        dest="results/proteinortho/cog/OrthoGroup{group}.fasta"
-        #validate=temp("results/proteinortho/cog/.Orthogroup{group}.renamed.done")
+        dest=f"{outdir}/proteinortho/cog/OrthoGroup{{group}}.fasta"
+        #validate=temp(f"{outdir}/proteinortho/cog/.Orthogroup{group}.renamed.done")
     shell:
+        #"echo {input.src} {output.dest} && "
         "mv {input.src} {output.dest}"
 
 rule validate_cog_renaming:
     input:
-        "results/proteinortho/.snakemake_validate",
-        "results/proteinortho/.snakemake_transform_validate",
-        "results/proteinortho/.snakemake_grab_proteins_validate",
-        expand("results/proteinortho/cog/OrthoGroup{group}.fasta", group=get_orthogroups)
+        f"{outdir}/proteinortho/.snakemake_validate",
+        f"{outdir}/proteinortho/.snakemake_transform_validate",
+        f"{outdir}/proteinortho/.snakemake_grab_proteins_validate",
+        expand(f"{outdir}/proteinortho/cog/OrthoGroup{{group}}.fasta", group=get_orthogroups)
     output:
-        "results/.all_cogs_renamed"
+        f"{outdir}/.all_cogs_renamed"
     shell:
         "touch {output}"
 
@@ -316,13 +372,13 @@ rule validate_cog_renaming:
 #     input:
 #         # should only be executed after dbcan AND grab_proteins are done
 #         dbcan_done=get_dbcan_output,
-#         cogs_renamed="results/proteinortho/cog/.all_renamed.done"
+#         cogs_renamed=f"{outdir}/proteinortho/cog/.all_renamed.done"
 #     output:
-#         touch("results/tf_data/.classify_tfs_done")
+#         touch(f"{outdir}/tf_data/.classify_tfs_done")
 #     conda:
 #         "workflow/envs/aurtho.yml"
 #     params:
-#         cog_dir=os.path.join("results/proteinortho", config["cog_directory"]),
+#         cog_dir=os.path.join(f"{outdir}/proteinortho", config["cog_directory"]),
 #         perc_threshold=config["tf_perc_threshold"],
 #         tf_families=config["tf_families"]
 #     shell:
@@ -330,50 +386,56 @@ rule validate_cog_renaming:
 
 rule classify_ipr_tfs:
     input:
-        ipr_validate="results/.all_iprscan_done",
-        cogs_renamed="results/.all_cogs_renamed"
+        ipr_validate=f"{outdir}/.all_iprscan_done",
+        cogs_renamed=f"{outdir}/.all_cogs_renamed"
     output:
-        validate=touch("results/.classify_tfs_done")
+        validate=touch(f"{outdir}/.classify_tfs_done")
     conda:
         "workflow/envs/aurtho.yml"
     params:
-        ipr_dir="results/interproscan/",
-        cog_dir=os.path.join("results/proteinortho", config["cog_directory"]),
+        ipr_dir=f"{outdir}/interproscan/",
+        cog_dir=os.path.join(f"{outdir}/proteinortho", config["cog_directory"]),
         perc_threshold=config["tf_perc_threshold"],
         tf_families=config["tf_families"]
+    benchmark:
+        f"{outdir}/benchmarks/classify_ipr_tfs/benchmark.tsv"
+        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
-        "python workflow/scripts/5_classify_tfs_IPR.py --ipr_dir {params.ipr_dir} --tf_domains resources/tf_ipr_domains.tsv --cog_dir {params.cog_dir} --outdir results/tf_data/ --tf_families {params.tf_families} --perc_threshold {params.perc_threshold} && "
-        "touch {output.validate}"
+        f"python workflow/scripts/5_classify_tfs_IPR.py --ipr_dir {params.ipr_dir} --tf_domains resources/tf_ipr_domains.tsv --cog_dir {params.cog_dir} --outdir {outdir}/tf_data/ --tf_families {params.tf_families} --perc_threshold {params.perc_threshold} && "
+        f"touch {output.validate}"
 
 rule extract_upstream_regions:
     input:
-        "results/.gff_db_created",
-        tf_validate="results/.classify_tfs_done"
+        f"{outdir}/.gff_db_created",
+        tf_validate=f"{outdir}/.classify_tfs_done"
     output:
-        validate=touch("results/tf_data/{tf}/.ups_done_{length}"), # when I use temp(), I need to ensure that the file is created in the shell command with touch
-        logs=os.path.join("results/tf_data/{tf}/upstream_{length}.log")
+        validate=touch(f"{outdir}/tf_data/{{tf}}/.ups_done_{{length}}"), # when I use temp(), I need to ensure that the file is created in the shell command with touch
+        logs=os.path.join(f"{outdir}/tf_data/{{tf}}/upstream_{{length}}.log")
     conda:
         "workflow/envs/aurtho.yml"
     params:
         stop_cds=config["upstream_stop_cds"],
         length=lambda wildcards: wildcards.length,
-        tf_dir=lambda wildcards: f"results/tf_data/{wildcards.tf}"
+        tf_dir=lambda wildcards: f"{outdir}/tf_data/{wildcards.tf}"
+    benchmark:
+        f"{outdir}/benchmarks/extract_upstream_regions/{tf}_{length}.tsv"
+        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
-        "python workflow/scripts/6_fetch_ups.py "
-        "--fna-dir results/fna/ "
-        "--gff-dir results/cds_gff/ "
-        "--create-db False "
-        "--tf-dir {params.tf_dir} "
-        "--length {params.length} "
-        "--stop-cds {params.stop_cds} "
-        "--logfile {output.logs}" # && "
+        f"python workflow/scripts/6_fetch_ups.py "
+        f"--fna-dir {outdir}/fna/ "
+        f"--gff-dir {outdir}/cds_gff/ "
+        f"--create-db False "
+        f"--tf-dir {params.tf_dir} "
+        f"--length {params.length} "
+        f"--stop-cds {params.stop_cds} "
+        f"--logfile {output.logs}" # && "
         #"touch {output.validate}"
 
 rule validate_extract_ups:
     input:
-        expand("results/tf_data/{tf}/.ups_done_{length}", tf=tf_families_list, length=ups_lengths)
+        expand(f"{outdir}/tf_data/{{tf}}/.ups_done_{{length}}", tf=tf_families_list, length=ups_lengths)
     output:
-        "results/.extract_upstream_regions_done"
+        f"{outdir}/.extract_upstream_regions_done"
     shell:
         "touch {output}"
 
@@ -382,26 +444,29 @@ rule validate_extract_ups:
 # ------------------------ #
 rule run_meme:
     input:
-        ups_validate="results/.extract_upstream_regions_done"
-        #tf_ups_files=lambda wildcards: f"results/tf_data/{wildcards.tf}/upstream/{wildcards.meme_target}_upstream_{wildcards.length}.fasta"
+        ups_validate=f"{outdir}/.extract_upstream_regions_done"
+        #tf_ups_files=lambda wildcards: f"{outdir}/tf_data/{wildcards.tf}/upstream/{wildcards.meme_target}_upstream_{wildcards.length}.fasta"
     output:
-        validate=temp("results/tf_data/{tf}/meme/.meme_done_{motif_length}_{meme_mode}") # when I use temp(), I need to ensure that the file is created in the shell command with touch
+        validate=temp(f"{outdir}/tf_data/{{tf}}/meme/.meme_done_{{motif_length}}_{{meme_mode}}") # when I use temp(), I need to ensure that the file is created in the shell command with touch
     params:
         motif_length=lambda wildcards: wildcards.motif_length,
         meme_mode=lambda wildcards: wildcards.meme_mode,
-        tf_dir=lambda wildcards: f"results/tf_data/{wildcards.tf}"
+        tf_dir=lambda wildcards: f"{outdir}/tf_data/{wildcards.tf}"
+    benchmark:
+        f"{outdir}/benchmarks/meme/{tf}_{motif_length}_{meme_mode}.tsv"
+        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
         "bash workflow/scripts/meme_loop.sh {params.tf_dir}/upstream/ {params.meme_mode} {params.motif_length} {params.tf_dir} && "
         "touch {output.validate}"
 
 rule validate_meme:
     input:
-        expand("results/tf_data/{tf}/meme/.meme_done_{motif_length}_{meme_mode}",
+        expand(f"{outdir}/tf_data/{{tf}}/meme/.meme_done_{{motif_length}}_{{meme_mode}}",
                tf=tf_families_list,
                motif_length=meme_lengths,
                meme_mode=meme_modes)
     output:
-        "results/.all_meme_done"
+        f"{outdir}/.all_meme_done"
     shell:
         "touch {output}"
 
@@ -411,34 +476,49 @@ rule validate_meme:
 rule integrate_dbcan_tf:
     input:
         dbcan_done=get_dbcan_output,
-        tf_validate="results/.classify_tfs_done"
+        tf_validate=f"{outdir}/.classify_tfs_done"
     output:
-        outfile=touch("results/.dbcan_tf_integrated")
+        outfile=touch(f"{outdir}/.dbcan_tf_integrated")
     conda:
         "workflow/envs/aurtho.yml"
     params:
         method=config["tf_dbcan_method"],
         extension=config["tf_dbcan_extension"],
         neighbours=config["tf_dbcan_neighbours"]
+    benchmark:
+        f"{outdir}/benchmarks/integrate_dbcan_tf/benchmark.tsv"
     shell:
-        "python workflow/scripts/integrate_dbcan_tf.py " 
-        "--dbcan_dir results/dbcan/ "
-        "--gff_db_dir results/cds_gff/ "
-        "--db_dir resources/dbcan/db/ "
-        "--tf_classification results/tf_data/TF_classification.tsv "
-        "--method {params.method} "
-        "--extension {params.extension} "
-        "--neighbours {params.neighbours} "
-        "--outdir results/dbcan_tf/"
+        f"python workflow/scripts/integrate_dbcan_tf.py " 
+        f"--dbcan_dir {outdir}/dbcan/ "
+        f"--gff_db_dir {outdir}/cds_gff/ "
+        f"--db_dir {outdir}/dbcan/db/ "
+        f"--tf_classification {outdir}/tf_data/TF_classification.tsv "
+        f"--method {params.method} "
+        f"--extension {params.extension} "
+        f"--neighbours {params.neighbours} "
+        f"--outdir {outdir}/dbcan_tf/"
+
+# ---------------------------- #
+# ------- Benchmarking ------- #
+# ---------------------------- #
+rule combine_benchmarks:
+    input:
+        f"{outdir}/.dbcan_tf_integrated"
+    output:
+        combined=f"{outdir}/benchmarks/combined_benchmarks.tsv"
+    conda:
+        "workflow/envs/aurtho.yml"
+    shell:
+        f"python workflow/scripts/combine_benchmarks.py --benchmark_dir {outdir}/benchmarks/ --output_file {output.combined}"
 
 # ------------------------ #
 # ------- Clean up ------- #
 # ------------------------ #
 # rule cleanup_validation_files:
 #     input:
-#         "results/tf_data/.extract_upstream_regions_done"
+#         f"{outdir}/tf_data/.extract_upstream_regions_done"
 #     output:
-#         "results/tf_data/.cleanup_done"
+#         f"{outdir}/tf_data/.cleanup_done"
 #     shell:
 #         """
 #         rm -f results/tf_data/*/.ups_done_*

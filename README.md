@@ -294,7 +294,30 @@ We could also double all of the parameters, **except** for the java and interpro
 |     java     |   -Xmx    |   8   |  Snakefile   |
 | interproscan |   --cpu   |   4   |  Snakefile   |
 
-### 5. TF identification strategy
+### Benchmarking increased parallelization
+Testing was done on Linux, so I didn't use the lima parameters. I tested it on 100 genomes each time.
+
+#### Doubling everything
+|    Level     | Parameter | Value |    Where    |
+| :----------: | :-------: | :---: | :---------: |
+|  snakemake   |  --cores  |  16   | global call |
+|     rule     |  threads  |   8   |  Snakefile   |
+|     java     |   -Xmx    |  16   |  Snakefile   |
+| interproscan |   --cpu   |   8   |  Snakefile   |
+
+Time for full run: 
+
+#### Quadrupling everything
+|    Level     | Parameter | Value |    Where    |
+| :----------: | :-------: | :---: | :---------: |
+|  snakemake   |  --cores  |  32   | global call |
+|     rule     |  threads  |  16   |  Snakefile   |
+|     java     |   -Xmx    |  32   |  Snakefile   |
+| interproscan |   --cpu   |  16   |  Snakefile   |
+
+Time for full run: 
+
+## 6. TF identification strategy
 Based on the IPR domains contained in the Interproscan result tables, we classify proteins into different TF families. 
 
 The program loads the IPR predictions and the TF family definition table (see below), and filters the former, like this: 
@@ -336,3 +359,8 @@ Here are the available TF families (use the Short_name in the config.yaml file).
 |    DeoR     |    DeoR    |                  DeoR-type HTH domain                  | IPR001034 |
 
 If any users want to add TFs, they can always contact me and contribute to this very simplified database. 
+
+
+```bash
+snakemake results/.all_iprscan_done --configfile config/config.yml --config max_genomes=10 --cores 8 --use-conda --use-apptainer --apptainer-args "--bind $PWD/resources/interproscan-5.75-106.0/data:/opt/interproscan/data" --benchmark-extended
+```

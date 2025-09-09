@@ -1,10 +1,13 @@
+## Timestamp for output directory
+timestamp: "20250902"
+
 ## Configuration for downloading genomes
 genus: "Streptomyces"
 assemblylevel: "complete" # Options: {complete,chromosome,contig,scaffold,all}
 overwrite: "True" # Options: {True,False}
 download_genomes_db: "refseq" # Options: {refseq,genbank}
 repository: "bacteria" # Options: {bacteria,fungi,invertebrate,metagenomes,other,plant,protozoa,vertebrate_mammalian,vertebrate_other,viral}
-max_genomes: "300"
+max_genomes: "5"
 
 ## Configuration for InterproScan
 ipr_appl: "Pfam,PROSITEPROFILES,CDD" #(in addition to the default InterproScan)
