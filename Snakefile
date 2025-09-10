@@ -75,7 +75,7 @@ rule all:
 rule download_genomes:
     output:
         assembly_info_path,
-        "benchmarks/download_genomes/benchmark.tsv"
+        f"{outdir}/benchmarks/download_genomes/benchmark.tsv"
     conda:
         "workflow/envs/aurtho.yml"
     params:
@@ -85,7 +85,8 @@ rule download_genomes:
         overwrite=config["overwrite"],
         db=config["download_genomes_db"],
         repo=config["repository"],
-        max_genomes=config["max_genomes"]
+        max_genomes=config["max_genomes"],
+        required=config["required_genomes"] if "required_genomes" in config else []
     benchmark:
         f"{outdir}/benchmarks/download_genomes/benchmark.tsv"
         #repeat("benchmarks/somecommand/{sample}.tsv", 3)
@@ -97,7 +98,8 @@ rule download_genomes:
         "--overwrite {params.overwrite} "
         "--database {params.db} "
         "--repository {params.repo} "
-        "--max-genomes {params.max_genomes}"
+        "--max-genomes {params.max_genomes} "
+        "--required-genomes {params.required}"
 
 ## I'm actually not using this... And it's not updating the config file. 
 checkpoint find_strains:
@@ -182,7 +184,7 @@ if system == "Darwin":
             #cpus=config["ipr_cpu"] or 4,
             applications=config["ipr_appl"]
         benchmark:
-            f"{outdir}/benchmarks/interproscan/{strain}.tsv"
+            f"{outdir}/benchmarks/interproscan/{{strain}}.tsv"
             #repeat("benchmarks/somecommand/{sample}.tsv", 3)
         shell:
             f"mkdir -p {outdir}/interproscan && "
@@ -209,7 +211,7 @@ if system == "Linux":
             #cpus=config["ipr_cpu"] or 4,
             applications=config["ipr_appl"]
         benchmark:
-            f"{outdir}/benchmarks/interproscan/{strain}.tsv"
+            f"{outdir}/benchmarks/interproscan/{{strain}}.tsv"
             #repeat("benchmarks/somecommand/{sample}.tsv", 3)
         shell:
             f"mkdir -p {outdir}/interproscan && "
@@ -237,7 +239,7 @@ rule run_dbcan:
     conda:
         "workflow/envs/dbcan.yml"
     benchmark:
-        f"{outdir}/benchmarks/dbcan/{strain}.tsv"
+        f"{outdir}/benchmarks/dbcan/{{strain}}.tsv"
         #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
         f"run_dbcan easy_substrate --mode protein "
@@ -418,7 +420,7 @@ rule extract_upstream_regions:
         length=lambda wildcards: wildcards.length,
         tf_dir=lambda wildcards: f"{outdir}/tf_data/{wildcards.tf}"
     benchmark:
-        f"{outdir}/benchmarks/extract_upstream_regions/{tf}_{length}.tsv"
+        f"{outdir}/benchmarks/extract_upstream_regions/{{tf}}_{{length}}.tsv"
         #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
         f"python workflow/scripts/6_fetch_ups.py "
@@ -453,7 +455,7 @@ rule run_meme:
         meme_mode=lambda wildcards: wildcards.meme_mode,
         tf_dir=lambda wildcards: f"{outdir}/tf_data/{wildcards.tf}"
     benchmark:
-        f"{outdir}/benchmarks/meme/{tf}_{motif_length}_{meme_mode}.tsv"
+        f"{outdir}/benchmarks/meme/{{tf}}_{{motif_length}}_{{meme_mode}}.tsv"
         #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
         "bash workflow/scripts/meme_loop.sh {params.tf_dir}/upstream/ {params.meme_mode} {params.motif_length} {params.tf_dir} && "
