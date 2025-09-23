@@ -24,6 +24,9 @@ minimum_cog_size: 4 # min number of proteins to be considered to create the COG 
 tf_families: "LacI,GntR" # options: {AraC, ArgR, ArsR, AsnC, BirA, Crp, DeoR, Fis, Fur, GntR, IclR, LacI, LexA, LuxR, LysR, MarR, PadR, PhoB, SinR, TetR, TrmB}
 tf_perc_threshold: 70 # Percentage of proteins in the COG, for the COG to be considered in following analyses
 
+## Filter proteinortho files, if needed.
+
+
 ## Upstream region extraction
 upstream_region_length: [100, 300, 500] # Length of the upstream region to extract
 upstream_stop_cds: True # Options: {True,False} - If True, stop codons will be included in the upstream region

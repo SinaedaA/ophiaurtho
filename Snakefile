@@ -287,81 +287,107 @@ rule run_proteinortho:
         f"mv {project_name}.proteinortho.tsv {output.main_tsv}; mv {project_name}.proteinortho-graph {output.graph}; mv {project_name}.info {output.info}; "
         f"mv {project_name}.blast-graph {output.blast_graph}; mv {project_name}.proteinortho-graph.summary {output.graph_summary}; mv {project_name}.proteinortho.html {output.html};"
 
-rule transform_proteinortho:
+rule classify_ipr_tfs:
     input:
-        cds_faa=cds_faa_inputs,  # Use function instead of glob
-        main_tsv=f"{outdir}/proteinortho/{project_name}.proteinortho.tsv",
-        graph=f"{outdir}/proteinortho/{project_name}.proteinortho-graph"
+        ipr_validate=f"{outdir}/.all_iprscan_done",
+        proteinortho_tsv=f"{outdir}/proteinortho/{project_name}.proteinortho.tsv"
     output:
-        graph_summary=f"{outdir}/proteinortho/{project_name}.proteinortho-graph.summary",
-        html=f"{outdir}/proteinortho/{project_name}.proteinortho.html",
-        xml=f"{outdir}/proteinortho/{project_name}.proteinortho.xml",
-        validate=f"{outdir}/proteinortho/.snakemake_transform_validate"
+        validate=f"{outdir}/.classify_tfs_done",
+        tf_proteinortho=expand(f"{outdir}/tf_data/{{tf}}.proteinortho.tsv", tf=tf_families_list)
     conda:
-        "workflow/envs/proteinortho.yml"
+        "workflow/envs/aurtho.yml"
+    params:
+        ipr_dir=f"{outdir}/interproscan/",
+        perc_threshold=config["tf_perc_threshold"],
+        tf_families=config["tf_families"]
     benchmark:
-        f"{outdir}/benchmarks/proteinortho/transform_benchmark.tsv"
+        f"{outdir}/benchmarks/classify_ipr_tfs/benchmark.tsv"
         #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
-        "proteinortho_summary.pl '{input.graph}' > '{output.graph_summary}' && "
-        "proteinortho2html.pl {input.main_tsv} {input.cds_faa} > {output.html} && "
-        "proteinortho2xml.pl {input.main_tsv} > {output.xml} && "
-        "touch {output.validate}"
+        f"python workflow/scripts/5_classify_tfs_IPR.py --ipr_dir {params.ipr_dir} --tf_domains resources/tf_ipr_domains.tsv --proteinortho_tsv {input.proteinortho_tsv} --outdir {outdir}/tf_data/ --tf_families {params.tf_families} --perc_threshold {params.perc_threshold}"
+
+
+# rule transform_proteinortho:
+#     input:
+#         cds_faa=cds_faa_inputs,  # Use function instead of glob
+#         main_tsv=f"{outdir}/proteinortho/{project_name}.proteinortho.tsv",
+#         graph=f"{outdir}/proteinortho/{project_name}.proteinortho-graph"
+#     output:
+#         graph_summary=f"{outdir}/proteinortho/{project_name}.proteinortho-graph.summary",
+#         html=f"{outdir}/proteinortho/{project_name}.proteinortho.html",
+#         xml=f"{outdir}/proteinortho/{project_name}.proteinortho.xml",
+#         validate=f"{outdir}/proteinortho/.snakemake_transform_validate"
+#     conda:
+#         "workflow/envs/proteinortho.yml"
+#     benchmark:
+#         f"{outdir}/benchmarks/proteinortho/transform_benchmark.tsv"
+#         #repeat("benchmarks/somecommand/{sample}.tsv", 3)
+#     shell:
+#         "proteinortho_summary.pl '{input.graph}' > '{output.graph_summary}' && "
+#         "proteinortho2html.pl {input.main_tsv} {input.cds_faa} > {output.html} && "
+#         "proteinortho2xml.pl {input.main_tsv} > {output.xml} && "
+#         "touch {output.validate}"
 
 checkpoint grab_proteins:
     input:
         cds_faa=cds_faa_inputs,
-        main_tsv=f"{outdir}/proteinortho/{project_name}.proteinortho.tsv"
+        tf_validate=f"{outdir}/.classify_tfs_done",
+        tf_tsv=f"{outdir}/tf_data/{{tf}}.proteinortho.tsv"
     output:
-        validate=f"{outdir}/proteinortho/.snakemake_grab_proteins_validate"
+        validate=f"{outdir}/tf_data/{{tf}}/.snakemake_grab_proteins_validate"
     params:
         cpus=config["proteinortho_cpu"],
-        cog_dir=os.path.join(f"{outdir}/proteinortho", config["cog_directory"]),
+        cog_dir=os.path.join(f"{outdir}/tf_data/{{tf}}", "cogs"),
         min_prot=config["minimum_cog_size"]
     conda:
         "workflow/envs/proteinortho.yml"
     benchmark:
-        f"{outdir}/benchmarks/proteinortho/grab_proteins_benchmark.tsv"
+        f"{outdir}/benchmarks/proteinortho/grab_proteins_benchmark_{{tf}}.tsv"
         #repeat("benchmarks/somecommand/{sample}.tsv", 3)
     shell:
         "mkdir -p {params.cog_dir} && "
         "proteinortho_grab_proteins.pl -tofiles={params.cog_dir} "
         "-cpus={params.cpus} -minprot={params.min_prot} "
-        "{input.main_tsv} {input.cds_faa} && "
+        "{input.tf_tsv} {input.cds_faa} && "
         "touch {output.validate}"
 
 # def get_orthogroups(wildcards):
 #     """Dynamically get list of groups after grab_proteins completes"""
 #     return glob_wildcards(f"{outdir}/proteinortho/cog/{project_name}.proteinortho.tsv.OrthoGroup{{group}}.fasta")[1]
 
-def get_orthogroups(wildcards):
-    cog_dir = os.path.join(outdir, "proteinortho", "cog")
-    # Use the correct dynamic glob with your timestamped outdir
-    pattern = f"{cog_dir}/{project_name}.proteinortho.tsv.OrthoGroup*.fasta"
-    orthogroup_paths = glob.glob(pattern)
-    print(f"Orthogroup paths: {orthogroup_paths}")
-    # Extract group wildcard values from filenames
-    groups = [os.path.basename(f).split("OrthoGroup")[1].split(".fasta")[0] for f in orthogroup_paths]
-    #print(f"Groups: {groups}")
-    return groups
 
 rule rename_orthogroup_fastas:
     input:
         # define the input, by using the config value for the project name, as well as the group wildcard
-        src=lambda wildcards: f"{outdir}/proteinortho/cog/{config['proteinortho_project']}.proteinortho.tsv.OrthoGroup{wildcards.group}.fasta"
+        #src=lambda wildcards: f"{outdir}/tf_data/{{tf}}/cogs/{{tf}}.proteinortho.tsv.OrthoGroup{wildcards.group}.fasta"
+        f"{outdir}/tf_data/{{tf}}/.snakemake_grab_proteins_validate"
     output:
-        dest=f"{outdir}/proteinortho/cog/OrthoGroup{{group}}.fasta"
+        #dest=f"{outdir}/tf_data/{{tf}}/cogs/OG-{{tf}}_{{group}}.fasta"
+        validate=touch(f"{outdir}/tf_data/{{tf}}/.cogs.renamed.done")
         #validate=temp(f"{outdir}/proteinortho/cog/.Orthogroup{group}.renamed.done")
     shell:
         #"echo {input.src} {output.dest} && "
-        "mv {input.src} {output.dest}"
+        #"mv {input.src} {output.dest}"
+        f"rename 's/\.proteinortho.tsv\./_/g' {outdir}/tf_data/*/cogs/*fasta"
+
+### this has to be tested ! And it was in front of the previous rule before as well. I don't know if it's relevant.
+# def get_orthogroups(wildcards):
+#     tf_data_dir = os.path.join(outdir, "tf_data")
+#     # Use the correct dynamic glob with your timestamped outdir
+#     pattern = f"{tf_data_dir}/*/cogs/*.proteinortho.tsv.OrthoGroup*.fasta"
+#     orthogroup_paths = glob.glob(pattern)
+#     print(f"Orthogroup paths: {orthogroup_paths}")
+#     # Extract group wildcard values from filenames
+#     groups = [os.path.basename(f).split("OrthoGroup")[1].split(".fasta")[0] for f in orthogroup_paths]
+#     #print(f"Groups: {groups}")
+#     return groups
 
 rule validate_cog_renaming:
     input:
         f"{outdir}/proteinortho/.snakemake_validate",
-        f"{outdir}/proteinortho/.snakemake_transform_validate",
-        f"{outdir}/proteinortho/.snakemake_grab_proteins_validate",
-        expand(f"{outdir}/proteinortho/cog/OrthoGroup{{group}}.fasta", group=get_orthogroups)
+        expand(f"{outdir}/tf_data/{{tf}}/.snakemake_grab_proteins_validate", tf=tf_families_list),
+        expand(f"{outdir}/tf_data/{{tf}}/.cogs.renamed.done", tf=tf_families_list)
+        #expand(f"{outdir}/tf_data/{{tf}}/cogs/OG-{{tf}}_{{group}}.fasta", group=get_orthogroups, tf=tf_families_list)
     output:
         f"{outdir}/.all_cogs_renamed"
     shell:
@@ -370,41 +396,6 @@ rule validate_cog_renaming:
 # ---------------------------- #
 # ------- Classify TFs ------- #
 # ---------------------------- #
-# rule classify_tfs:
-#     input:
-#         # should only be executed after dbcan AND grab_proteins are done
-#         dbcan_done=get_dbcan_output,
-#         cogs_renamed=f"{outdir}/proteinortho/cog/.all_renamed.done"
-#     output:
-#         touch(f"{outdir}/tf_data/.classify_tfs_done")
-#     conda:
-#         "workflow/envs/aurtho.yml"
-#     params:
-#         cog_dir=os.path.join(f"{outdir}/proteinortho", config["cog_directory"]),
-#         perc_threshold=config["tf_perc_threshold"],
-#         tf_families=config["tf_families"]
-#     shell:
-#         "python workflow/scripts/5_classify_tfs.py --dbcan_dir results/dbcan/ --cog_dir {params.cog_dir} --outdir results/tf_data/ --tf_families {params.tf_families} --perc_threshold {params.perc_threshold}"
-
-rule classify_ipr_tfs:
-    input:
-        ipr_validate=f"{outdir}/.all_iprscan_done",
-        cogs_renamed=f"{outdir}/.all_cogs_renamed"
-    output:
-        validate=touch(f"{outdir}/.classify_tfs_done")
-    conda:
-        "workflow/envs/aurtho.yml"
-    params:
-        ipr_dir=f"{outdir}/interproscan/",
-        cog_dir=os.path.join(f"{outdir}/proteinortho", config["cog_directory"]),
-        perc_threshold=config["tf_perc_threshold"],
-        tf_families=config["tf_families"]
-    benchmark:
-        f"{outdir}/benchmarks/classify_ipr_tfs/benchmark.tsv"
-        #repeat("benchmarks/somecommand/{sample}.tsv", 3)
-    shell:
-        f"python workflow/scripts/5_classify_tfs_IPR.py --ipr_dir {params.ipr_dir} --tf_domains resources/tf_ipr_domains.tsv --cog_dir {params.cog_dir} --outdir {outdir}/tf_data/ --tf_families {params.tf_families} --perc_threshold {params.perc_threshold} && "
-        f"touch {output.validate}"
 
 rule extract_upstream_regions:
     input:
@@ -493,7 +484,7 @@ rule integrate_dbcan_tf:
         f"python workflow/scripts/integrate_dbcan_tf.py " 
         f"--dbcan_dir {outdir}/dbcan/ "
         f"--gff_db_dir {outdir}/cds_gff/ "
-        f"--db_dir {outdir}/dbcan/db/ "
+        f"--db_dir resources/dbcan/db/ "
         f"--tf_classification {outdir}/tf_data/TF_classification.tsv "
         f"--method {params.method} "
         f"--extension {params.extension} "
