@@ -26,14 +26,18 @@ cd ophiaurtho
 ```
 Both of these commands should have the same effect: create a directory called ophiaurtho, containing everything that is necessary to run the pipeline. 
 
-### 1.4. MacOS specific dependencies
-For the Interproscan database download, we need md5sum to check the accuracy of the downloaded data, and this is not basally installed on MacOS. It is however included in the `brew` package `coreutils`, which you can download like this:
+### 1.4. MacOS specific dependencies (brew)
+For the Interproscan database download, we need md5sum to check the accuracy of the downloaded data, and this is not basally installed on MacOS. 
+Additionally, during the pipeline I use the `rename` command, which has to be installed.
+
+Both of these commands can be installed with Homebrew !
 
 ```bash
-brew install coreutils
+brew install coreutils # includes the md5sum command
+brew install rename
 ```
 
-### 1.4. Download databases
+### 1.5. Download databases
 The pipeline depends on **dbCAN** and **InterProScan**, for which we need to download external databases. The first step is thus to create those and get them locally on your machine. There is a snakemake rule for this as well: 
 
 ```bash
@@ -42,7 +46,7 @@ snakemake -s workflow/rules/databases.smk --cores 8 --use-conda --rerun-incomple
 
 **Note**: if your machine runs on Linux, this rule will also install a local InterProScan version. 
 
-### 1.5. InterProScan installation (MacOS)
+### 1.6. InterProScan installation (MacOS)
 InterProScan is only available for Linux machines (and is installed on Linux during in 1.4.). However, using a docker image, we can run it on Darwin as well. Therefore, for portability, InterProScan is always run through the docker image. Full preparation for the InterProScan docker install are found here: ./InterProScan_MacOS.md. 
 
 ## 2. Simple snakemake run
@@ -360,6 +364,12 @@ Here are the available TF families (use the Short_name in the config.yaml file).
 
 If any users want to add TFs, they can always contact me and contribute to this very simplified database. 
 
+## 7. Writing ALL Orthogroups to fasta files
+By default, in order to save space, the pipeline only writes the Orthogroups identified as TFs in the dataset. 
+
+```bash
+snakemake -s workflow/rules/get_all_cogs.smk --configfile config/config.yml --config timestamp=$TIMESTAMP --cores 8 --use-conda --rerun-incomplete
+```
 
 ```bash
 snakemake results/.all_iprscan_done --configfile config/config.yml --config max_genomes=10 --cores 8 --use-conda --use-apptainer --apptainer-args "--bind $PWD/resources/interproscan-5.75-106.0/data:/opt/interproscan/data" --benchmark-extended

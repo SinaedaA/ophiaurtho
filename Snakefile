@@ -358,16 +358,10 @@ checkpoint grab_proteins:
 
 rule rename_orthogroup_fastas:
     input:
-        # define the input, by using the config value for the project name, as well as the group wildcard
-        #src=lambda wildcards: f"{outdir}/tf_data/{{tf}}/cogs/{{tf}}.proteinortho.tsv.OrthoGroup{wildcards.group}.fasta"
         f"{outdir}/tf_data/{{tf}}/.snakemake_grab_proteins_validate"
     output:
-        #dest=f"{outdir}/tf_data/{{tf}}/cogs/OG-{{tf}}_{{group}}.fasta"
         validate=touch(f"{outdir}/tf_data/{{tf}}/.cogs.renamed.done")
-        #validate=temp(f"{outdir}/proteinortho/cog/.Orthogroup{group}.renamed.done")
     shell:
-        #"echo {input.src} {output.dest} && "
-        #"mv {input.src} {output.dest}"
         f"rename 's/\.proteinortho.tsv\./_/g' {outdir}/tf_data/*/cogs/*fasta"
 
 ### this has to be tested ! And it was in front of the previous rule before as well. I don't know if it's relevant.
@@ -387,7 +381,6 @@ rule validate_cog_renaming:
         f"{outdir}/proteinortho/.snakemake_validate",
         expand(f"{outdir}/tf_data/{{tf}}/.snakemake_grab_proteins_validate", tf=tf_families_list),
         expand(f"{outdir}/tf_data/{{tf}}/.cogs.renamed.done", tf=tf_families_list)
-        #expand(f"{outdir}/tf_data/{{tf}}/cogs/OG-{{tf}}_{{group}}.fasta", group=get_orthogroups, tf=tf_families_list)
     output:
         f"{outdir}/.all_cogs_renamed"
     shell:
