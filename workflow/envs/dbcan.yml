@@ -117,4 +117,3 @@ dependencies:
   - xz-tools=5.8.1
   - zstandard=0.23.0
   - zstd=1.5.7
-prefix: /opt/homebrew/Caskroom/miniforge/base/envs/dbcan

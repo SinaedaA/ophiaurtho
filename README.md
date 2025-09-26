@@ -372,5 +372,5 @@ snakemake -s workflow/rules/get_all_cogs.smk --configfile config/config.yml --co
 ```
 
 ```bash
-snakemake results/.all_iprscan_done --configfile config/config.yml --config max_genomes=10 --cores 8 --use-conda --use-apptainer --apptainer-args "--bind $PWD/resources/interproscan-5.75-106.0/data:/opt/interproscan/data" --benchmark-extended
+snakemake --configfile config/config.yml --config timestamp=$TIMESTAMP --cores 8 --use-conda --use-apptainer --apptainer-args "--bind $PWD/resources/interproscan-5.75-106.0/data:/opt/interproscan/data" --benchmark-extended --rerun-triggers mtime
 ```

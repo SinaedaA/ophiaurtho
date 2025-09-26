@@ -37,6 +37,7 @@ def main():
     ###### COG DATA ######
     ## Get the COG to seqids mapping file, based on proteinortho.tsv
     proteinortho_tsv, cog2seqid = make_cog2seqid(proteinortho_tsv)
+    cog2seqid.to_csv(f"{outdir}/cog2seqid.tsv", sep = "\t", index = False)
 
     ## Merge tf_tab and cog_seqids, based on GeneID
     tf_full_tab = tf_full_tab.merge(cog2seqid, on="geneid", how="left")
@@ -49,6 +50,7 @@ def main():
     cog2tf["percentage"] = (cog2tf["n"] / cog2tf["n_genes"]) * 100
     ## Add this info to the tf_full_tab dataframe
     tf_full_tab = tf_full_tab.merge(cog2tf[["cog", "Short_name", "n", "percentage"]], on=["cog", "Short_name"], how="left")
+    tf_full_tab.to_csv(f"{outdir}/TF_classification_with_COGs.tsv", sep = "\t", index = True)
 
     for family in tf_families:
         ## Look for how many proteins were identified in this family

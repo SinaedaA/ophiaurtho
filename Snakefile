@@ -67,6 +67,7 @@ rule all:
         f"{outdir}/.extract_upstream_regions_done",
         f"{outdir}/.all_meme_done",
         f"{outdir}/.dbcan_tf_integrated",
+        f"{outdir}/.meme_info_extracted",
         f"{outdir}/benchmarks/combined_benchmarks.tsv"
 
 # -------------------------------- #
@@ -355,14 +356,13 @@ checkpoint grab_proteins:
 #     """Dynamically get list of groups after grab_proteins completes"""
 #     return glob_wildcards(f"{outdir}/proteinortho/cog/{project_name}.proteinortho.tsv.OrthoGroup{{group}}.fasta")[1]
 
-
 rule rename_orthogroup_fastas:
     input:
         f"{outdir}/tf_data/{{tf}}/.snakemake_grab_proteins_validate"
     output:
         validate=touch(f"{outdir}/tf_data/{{tf}}/.cogs.renamed.done")
     shell:
-        f"rename 's/\.proteinortho.tsv\./_/g' {outdir}/tf_data/*/cogs/*fasta"
+        f"rename -f 's/.proteinortho.tsv./_/g' {outdir}/tf_data/*/cogs/*fasta"
 
 ### this has to be tested ! And it was in front of the previous rule before as well. I don't know if it's relevant.
 # def get_orthogroups(wildcards):
@@ -456,6 +456,16 @@ rule validate_meme:
     shell:
         "touch {output}"
 
+rule extract_meme_info:
+    input:
+        f"{outdir}/.all_meme_done"
+    output:
+        touch(f"{outdir}/.meme_info_extracted")
+    conda:
+        "workflow/envs/aurtho.yml"
+    shell:
+        "python workflow/scripts/extract_meme_info.py --tf_data {outdir}/tf_data/ --outpath {outdir}/meme_info/"
+
 # ------------------------------------- #
 # ------ Integrate dbCAN and TFs ------ #
 # ------------------------------------- #
@@ -496,6 +506,27 @@ rule combine_benchmarks:
         "workflow/envs/aurtho.yml"
     shell:
         f"python workflow/scripts/combine_benchmarks.py --benchmark_dir {outdir}/benchmarks/ --output_file {output.combined}"
+
+# --------------------------------- #
+# ----- Target protein report ----- #
+# --------------------------------- #
+# target_proteins = get.config("target_proteins", "")
+# if len(target_proteins) > 0:
+#     rule target_protein_report:
+#         input:
+#             f"{outdir}/.dbcan_tf_integrated"
+#         output:
+#             report=f"{outdir}/target_protein_report.tsv"
+#         conda:
+#             "workflow/envs/aurtho.yml"
+#         params:
+#             proteins=",".join(target_proteins)
+#         shell:
+#             f"python workflow/scripts/target_protein_report.py "
+#             f"--dbcan_tf_dir {outdir}/dbcan_tf/ "
+#             f"--tf_classification {outdir}/tf_data/TF_classification.tsv "
+#             f"--target_proteins {params.proteins} "
+#             f"--output_file {output.report}"
 
 # ------------------------ #
 # ------- Clean up ------- #

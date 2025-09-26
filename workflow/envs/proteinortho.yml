@@ -31,4 +31,3 @@ dependencies:
   - readline=8.2
   - tk=8.6.13
   - tzdata=2025b
-prefix: /opt/homebrew/Caskroom/miniforge/base/envs/proteinortho
