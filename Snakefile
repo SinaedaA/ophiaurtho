@@ -10,7 +10,7 @@ if system == "Windows":
     raise RuntimeError("This workflow is not supported on Windows. Please use Linux or macOS.")
 
 ## Determine timestamp and output directory
-timestamp = config.get("timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
+timestamp = config.get("timestamp")
 outdir = f"results/{timestamp}"
 print(f"Output directory: {outdir}")
 

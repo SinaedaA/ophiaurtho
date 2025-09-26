@@ -12,13 +12,17 @@ print(f"Output directory: {outdir}")
 
 rule make_report:
     input:
-        tf_data = directory(f"{outdir}/tf_data/"),
-        meme_info = directory(f"{outdir}/meme_info/")
+        tf_data = f"{outdir}/tf_data/",
+        meme_info = f"{outdir}/meme_info/"
     output:
-        report = f"{outdir}/target_protein_report.pdf"
+        report = touch(f"{outdir}/.report_done")
     params:
         target_proteins = config["target_protein"]
     conda:
         "../envs/report.yml"
     shell:
-        f"python workflow/scripts/target_protein_report.py --target_proteins {params.target_proteins} --tf_data {input.tf_data} --outdir {outdir} --meme_info {input.meme_info}"
+        "python workflow/scripts/target_protein_report.py "
+        "--target_proteins {params.target_proteins} "
+        "--tf_data {input.tf_data} "
+        "--outdir {outdir} "
+        "--meme_info {input.meme_info}"

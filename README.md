@@ -371,6 +371,14 @@ By default, in order to save space, the pipeline only writes the Orthogroups ide
 snakemake -s workflow/rules/get_all_cogs.smk --configfile config/config.yml --config timestamp=$TIMESTAMP --cores 8 --use-conda --rerun-incomplete
 ```
 
+## 8. Get the data about your favourite TF
+First, make sure the proteinID of your favourite TF(s) is present in the config.yml file. Here's an example:
+
+```yaml
+## Target protein report
+target_protein: "WP_397728376.1,WP_114248190.1" # comma-separated list of target protein IDs to generate a report for
+```
+
 ```bash
-snakemake --configfile config/config.yml --config timestamp=$TIMESTAMP --cores 8 --use-conda --use-apptainer --apptainer-args "--bind $PWD/resources/interproscan-5.75-106.0/data:/opt/interproscan/data" --benchmark-extended --rerun-triggers mtime
+snakemake -s workflow/rules/make_report.smk --cores 8 --use-conda --rerun-incomplete --configfile config/config.yml --config timestamp=$TIMESTAMP
 ```

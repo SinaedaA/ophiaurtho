@@ -38,15 +38,4 @@ tf_dbcan_extension: "0" # Extension length for the CGC location in base pairs, t
 tf_dbcan_neighbours: "2" # Number of CGC neighbouring genes, to get neighbouring TFs
 
 ## Target protein report
-target_protein: "WP_397728376.1,WP_114248190.1" # comma-separated list of target protein IDs to generate a report for
-
-## Target Transcription Factor ??? gene id or something, uniprot number -- is it included?
-## include an option: genome to absolutely include, and/or list of genomes you want to have in the analysis. 
-## option to input a list of genomes to download (GCF numbers OR exact Species names) 
-## Is uniprot id in the genome annotation? 
-## Target TF: then you can at the end filter the results to just analyse this TF? 
-## Option: delete additional data that is not needed (to save space). 
-## Option: delete OrthoGroups that are not target TF families? 
-## antismash: predict regulons on them. Integrate Combatt? 
-## Test LacI007 -- as a target TF family. 
-## Integrate COGs to the dbCAN-TF integration??? is it possible? 
+target_protein: "" # comma-separated list of target protein IDs to generate a report for
