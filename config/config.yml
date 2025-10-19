@@ -1,27 +1,43 @@
-## Timestamp for output directory
+# Config file for ophiAURTHO workflow
+
+## NEED TO BE SET BY USER ##
+### Timestamp for output directory
 timestamp: "20250902"
 
-## Configuration for downloading genomes
+### Genus of interest
 genus: "Streptomyces"
+
+### Required genomes (space-separated list of genome accessions that must be included in the download)
+#required_genomes: "GCF_005519465.1 GCF_001685355.1" # Commented out by default, can be added if needed
+
+### Proteinortho project name 
+proteinortho_project: "streptomyces" # will just affect the names of the proteinortho output files
+
+### TF families of interest
+tf_families: "LacI,GntR" # options: {AraC, ArgR, ArsR, AsnC, BirA, Crp, DeoR, Fis, Fur, GntR, IclR, LacI, LexA, LuxR, LysR, MarR, PadR, PhoB, SinR, TetR, TrmB}
+
+### Target protein report
+target_protein: "" # comma-separated list of target protein IDs to generate a report for
+
+
+## CAN STAY AS DEFAULT ##
+## Configuration for downloading genomes
 assemblylevel: "complete" # Options: {complete,chromosome,contig,scaffold,all}
 overwrite: "True" # Options: {True,False}
 download_genomes_db: "refseq" # Options: {refseq,genbank,both}
 repository: "bacteria" # Options: {bacteria,fungi,invertebrate,metagenomes,other,plant,protozoa,vertebrate_mammalian,vertebrate_other,viral}
-max_genomes: "5"
-#required_genomes: "GCF_005519465.1 GCF_001685355.1" # space-separated list of genome accessions that must be included in the download
+max_genomes: "300"
 
 ## Configuration for InterproScan
 ipr_appl: "Pfam,PROSITEPROFILES,CDD" #(in addition to the default InterproScan)
 #ipr_cpu: 4 # Number of CPUs to use for InterproScan
 
 ## Configuration for proteinortho
-proteinortho_project: "streptomyces"
 proteinortho_cpu: 8
 cog_directory: "cog"
 minimum_cog_size: 4 # min number of proteins to be considered to create the COG fasta files
 
 ## TF families of interest (just an example for now)
-tf_families: "LacI,GntR" # options: {AraC, ArgR, ArsR, AsnC, BirA, Crp, DeoR, Fis, Fur, GntR, IclR, LacI, LexA, LuxR, LysR, MarR, PadR, PhoB, SinR, TetR, TrmB}
 tf_perc_threshold: 70 # Percentage of proteins in the COG, for the COG to be considered in following analyses
 
 ## Upstream region extraction
@@ -36,6 +52,3 @@ meme_lengths: [30, 20, 10]
 tf_dbcan_method: "neighbouring" # Options: {neighbouring,overlap,both} - Method to integrate dbCAN and TF data
 tf_dbcan_extension: "0" # Extension length for the CGC location in base pairs, to get neighbouring TFs
 tf_dbcan_neighbours: "2" # Number of CGC neighbouring genes, to get neighbouring TFs
-
-## Target protein report
-target_protein: "" # comma-separated list of target protein IDs to generate a report for

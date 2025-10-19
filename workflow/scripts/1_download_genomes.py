@@ -13,6 +13,7 @@ import random
 
 def main():
     outdir, genus, level, overwrite, db, repo, max_g, req = parsing_arguments()
+    print(f"Required genomes: {req}")
     ## Update max_g if req is not empty (i.e. if there are required genomes)
     if len(req) > 0 and max_g != math.inf:
         print(f"Counted {len(req)} required genomes, and max genomes limit set to {max_g}. {len(req)}/{max_g} will be your required genomes, and the rest will be 'randomly;' selected.")
@@ -88,11 +89,11 @@ def parsing_arguments():
 
     parser.add_argument('--outdir', default = "./genomes", help = "Path to output directory. Defaults to current_dir/genomes.")
     parser.add_argument('--genus', help = "Specify genus of interest", required=True)
-    parser.add_argument('--level-of-assembly', dest='level', help = "Level of assembly for download", choices = ['complete', 'chromosome', 'contig', 'scaffold', 'all'], default = "Complete Genome")
+    parser.add_argument('--level-of-assembly', dest='level', help = "Level of assembly for download", choices = ['complete', 'chromosome', 'contig', 'scaffold', 'all'], default = "complete")
     parser.add_argument('--overwrite', help = "Overwrite assembly files if they already exist", default = "True", choices = ["True", "False"])
     parser.add_argument('--database', help = "Download either from 'refseq' or 'genbank'", default = 'refseq', choices = ['refseq', 'genbank', 'both'])
     parser.add_argument('--repository', help = 'Which organisms to download', choices = ['bacteria', 'fungi', 'invertebrate', 'metagenomes', 'other', 'plant', 
-                                                                                      'protozoa', 'vertebrate_mammalian', 'vertebrate_other', 'viral'])
+                                                                                      'protozoa', 'vertebrate_mammalian', 'vertebrate_other', 'viral'], default = 'bacteria')
     parser.add_argument('--max-genomes', dest = "max", help = "Maximum number of genomes to download", default=math.inf, type = int)
     parser.add_argument('--required-genomes', help = "List of required genomes (GCF or GCA IDs) to download, even if they exceed the max-genomes limit", nargs = '*', default = [])
     args = vars(parser.parse_args())
@@ -129,6 +130,7 @@ def make_dry_run(date, repo, databases, genus, level):
             print(f"dry_run_{db}_{date}.txt doesn't exist, making it.")
             ## Make the dry_run.txt using ncbi_genome_download (ngd). Using ngd to download the genomes didn't work for me (kept getting disconnected).
             cmd = f"ncbi-genome-download {repo} --genera {genus} --section {db} --assembly-levels {level} --refseq-categories reference --output-folder ./ --dry-run > ./dry_run_{db}_{date}.txt"
+            print("Running command:", cmd)
             subprocess.run(cmd, shell = True) # tab-separated output, each genome on one line
         else:
             print(f"dry_run_{db}_{date}.txt already exists, using it.")
