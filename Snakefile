@@ -263,6 +263,11 @@ rule validate_dbcan:
 # ---------------------------- #
 # ------- Proteinortho ------- #
 # ---------------------------- #
+if system == "Linux":
+    proteinortho_env = "workflow/envs/proteinortho_Linux.yml"
+elif system == "Darwin":
+    proteinortho_env = "workflow/envs/proteinortho.yml"
+
 rule run_proteinortho:
     input:
         f"{outdir}/.symlinks_created",
@@ -276,7 +281,7 @@ rule run_proteinortho:
         graph_summary=f"{outdir}/proteinortho/{project_name}.proteinortho-graph.summary",
         validate=f"{outdir}/proteinortho/.snakemake_validate"
     conda:
-        "workflow/envs/proteinortho.yml"
+        proteinortho_env
     params:
         cpus=config["proteinortho_cpu"]
     benchmark:
