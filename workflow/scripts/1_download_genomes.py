@@ -69,7 +69,10 @@ def main():
 
     ## Shuffle the ftp_list
     # First extract required genomes as req_ftp list, and remove them from the ftp_list
-    req_ftps = [ftp for ftp in ftp_list if any(req_acc in ftp.split("/")[-1] for req_acc in found_req)]
+    if len(req) == 0:
+        req_ftps = []
+    else:
+        req_ftps = [ftp for ftp in ftp_list if any(req_acc in ftp.split("/")[-1] for req_acc in found_req)]
     shuffled_ftps = [ftp for ftp in ftp_list if ftp not in req_ftps]
     
     ## Shuffle the shuffled_ftps
