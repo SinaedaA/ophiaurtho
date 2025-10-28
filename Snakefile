@@ -346,7 +346,7 @@ checkpoint grab_proteins:
         cog_dir=os.path.join(f"{outdir}/tf_data/{{tf}}", "cogs"),
         min_prot=config["minimum_cog_size"]
     conda:
-        "workflow/envs/proteinortho.yml"
+        proteinortho_env
     benchmark:
         f"{outdir}/benchmarks/proteinortho/grab_proteins_benchmark_{{tf}}.tsv"
         #repeat("benchmarks/somecommand/{sample}.tsv", 3)
