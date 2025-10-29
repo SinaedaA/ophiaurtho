@@ -293,7 +293,8 @@ rule run_proteinortho:
         f"proteinortho2html.pl {project_name}.proteinortho.tsv {input.cds_faa} > {project_name}.proteinortho.html; "
         f"proteinortho2xml.pl {project_name}.proteinortho.tsv > {project_name}.proteinortho.tsv.xml; "
         f"mv {project_name}.proteinortho.tsv {output.main_tsv}; mv {project_name}.proteinortho-graph {output.graph}; mv {project_name}.info {output.info}; "
-        f"mv {project_name}.blast-graph {output.blast_graph}; mv {project_name}.proteinortho-graph.summary {output.graph_summary}; mv {project_name}.proteinortho.html {output.html};"
+        f"mv {project_name}.blast-graph {output.blast_graph}; mv {project_name}.proteinortho-graph.summary {output.graph_summary}; mv {project_name}.proteinortho.html {output.html}; "
+        f"mv {project_name}.blast-graph_clean {outdir}/proteinortho/{project_name}.blast-graph_clean; mv {project_name}.proteinortho.tsv.xml {outdir}/proteinortho/{project_name}.proteinortho.tsv.xml"
 
 rule classify_ipr_tfs:
     input:
