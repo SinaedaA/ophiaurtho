@@ -1,0 +1,91 @@
+services:
+  # One-time database setup service
+  db-setup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - dbcan_db:/data/dbcan
+      - interproscan_db:/data/interproscan
+      - ./resources:/app/resources
+      - ./workflow/rules/databases.smk:/app/workflow/rules/databases.smk
+    environment:
+      - DBCAN_DB_PATH=/data/dbcan
+      - INTERPROSCAN_DB_PATH=/data/interproscan
+    command: >
+      bash -c "
+      echo 'Setting up databases...' &&
+      snakemake -s workflow/rules/databases.smk --cores 8 --use-conda --rerun-incomplete &&
+      echo 'Database setup complete!' "
+
+    profiles:
+      - setup
+
+  # InterProScan service (runs as needed by Snakemake)
+  interproscan:
+    image: interpro/interproscan:5.75-106.0
+    volumes:
+      - interproscan_db:/opt/interproscan/data
+      - ./results:/results
+    command: ["tail", "-f", "/dev/null"]  # Keep container running
+    profiles:
+      - pipeline
+
+  # Main Snakemake pipeline service
+  snakemake:
+    platform: linux/amd64
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 16G
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Mount your project files
+      - ./Snakefile:/app/Snakefile
+      - ./config:/app/config
+      - ./workflow:/app/workflow
+      - ./resources:/app/resources
+      - ./results:/app/results
+      
+      # Mount database volumes
+      - dbcan_db:/data/dbcan
+      - interproscan_db:/data/interproscan
+      
+      # Docker socket for running InterProScan container
+      - /var/run/docker.sock:/var/run/docker.sock
+    
+    environment:
+      - DBCAN_DB_PATH=/data/dbcan
+      - INTERPROSCAN_DB_PATH=/data/interproscan
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    
+    depends_on:
+      - interproscan
+    
+    command: >
+      bash -c "
+      echo 'Starting Snakemake pipeline...' &&
+      snakemake 
+        --configfile config/config.yml 
+        --cores 8 
+        --use-conda 
+        --rerun-incomplete
+      "
+    
+    profiles:
+      - pipeline
+
+# Named volumes for persistent database storage
+volumes:
+  dbcan_db:
+    driver: local
+  interproscan_db:
+    driver: local
+
+# Network for service communication
+networks:
+  default:
+    name: ophiaurtho_network

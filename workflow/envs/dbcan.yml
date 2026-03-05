@@ -1,0 +1,10 @@
+name: dbcan
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python=3.10
+  - diamond
+  - pip
+  - pip:
+    - dbcan==5.1.0

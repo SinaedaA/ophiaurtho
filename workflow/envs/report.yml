@@ -1,0 +1,17 @@
+yamlname: report
+channels:
+  - conda-forge
+dependencies:
+  - python=3.13
+  - biopython
+  - matplotlib-base
+  - numpy
+  - pandas
+  - scipy
+  - seaborn
+  - statsmodels
+  - patsy
+  - pip:
+    - fpdf2
+    - nbconvert
+    - requests

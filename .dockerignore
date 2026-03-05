@@ -1,0 +1,44 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Results and data directories (will be mounted as volumes)
+results/
+resources/interproscan*/
+resources/dbcan/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Snakemake
+.snakemake/
+*.log
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+# Environment files (handled separately)
+.env
+.venv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp

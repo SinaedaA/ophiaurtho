@@ -1,0 +1,8 @@
+name: proteinortho
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - proteinortho=6.3.6
+  - diamond=2.1.13
+  - perl

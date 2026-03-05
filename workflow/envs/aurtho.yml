@@ -1,0 +1,20 @@
+name: aurtho
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - biopython
+    - bcbio-gff
+    - gffutils
+    - numpy
+    - pandas
+    - pyfaidx
+    - pyvcf3
+    - simplejson
+    - hmmer
+    - ncbi-genome-download
+    - requests
+    - tqdm

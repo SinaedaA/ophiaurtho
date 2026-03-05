@@ -24,7 +24,7 @@ build/
 *.log
 
 # Databases (these are downloaded by setup, don't commit them!)
-resources/interproscan/
+resources/interproscan*/
 resources/dbcan/db/
 !resources/dbcan/db/.gitkeep
 
