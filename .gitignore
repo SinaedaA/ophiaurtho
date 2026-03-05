@@ -1,0 +1,57 @@
+# Results and output directories
+results/
+logs/
+
+# Snakemake
+.snakemake/
+*.snakemake_timestamp
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Conda environments
+.conda/
+*.conda
+
+# Docker
+*.log
+
+# Databases (these are downloaded by setup, don't commit them!)
+resources/interproscan/
+resources/dbcan/db/
+!resources/dbcan/db/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# R
+.Rhistory
+.RData
+.Rproj.user
+
+# Keep empty directories with .gitkeep files
+!**/.gitkeep
