@@ -2,7 +2,7 @@
 
 ## NEED TO BE SET BY USER ##
 ### Timestamp for output directory
-timestamp: "20260217"
+timestamp: "20260305"
 
 ### Genus of interest
 genus: "Streptomyces"
@@ -17,7 +17,7 @@ proteinortho_project: "streptomyces" # will just affect the names of the protein
 tf_families: "LacI,GntR" # options: {AraC, ArgR, ArsR, AsnC, BirA, Crp, DeoR, Fis, Fur, GntR, IclR, LacI, LexA, LuxR, LysR, MarR, PadR, PhoB, SinR, TetR, TrmB}
 
 ### Target protein report
-target_protein: "WP_114242364.1" # comma-separated list of target protein IDs to generate a report for
+target_protein: "" # comma-separated list of target protein IDs to generate a report for
 
 ## CAN STAY AS DEFAULT ##
 ## Configuration for downloading genomes
@@ -25,7 +25,7 @@ assemblylevel: "complete" # Options: {complete,chromosome,contig,scaffold,all}
 overwrite: "True" # Options: {True,False}
 download_genomes_db: "refseq" # Options: {refseq,genbank,both}
 repository: "bacteria" # Options: {bacteria,fungi,invertebrate,metagenomes,other,plant,protozoa,vertebrate_mammalian,vertebrate_other,viral}
-max_genomes: "300"
+max_genomes: "100"
 
 ## Configuration for InterproScan
 ipr_appl: "Pfam,PROSITEPROFILES,CDD" #(in addition to the default InterproScan)
