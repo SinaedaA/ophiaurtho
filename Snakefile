@@ -263,7 +263,7 @@ rule run_proteinortho:
         "mkdir -p {outdir}/proteinortho && "
         "proteinortho6.pl -project={project_name} -singles -cpus={params.cpus} -selfblast -verbose {input.cds_faa} && touch {output.validate}; "
         "proteinortho2html.pl {project_name}.proteinortho.tsv {input.cds_faa} > {project_name}.proteinortho.html; "
-        "proteinortho_summary.pl '{input.graph}' > '{output.graph_summary}';"
+        "proteinortho_summary.pl {project_name}.proteinortho-graph > {project_name}.proteinortho-graph.summary; "
         "proteinortho2xml.pl {project_name}.proteinortho.tsv > {project_name}.proteinortho.tsv.xml; "
         "mv {project_name}.proteinortho.tsv {output.main_tsv}; mv {project_name}.proteinortho-graph {output.graph}; mv {project_name}.info {output.info}; "
         "mv {project_name}.blast-graph {output.blast_graph}; mv {project_name}.proteinortho-graph.summary {output.graph_summary}; mv {project_name}.proteinortho.html {output.html}; "

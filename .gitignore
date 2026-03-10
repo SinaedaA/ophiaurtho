@@ -1,6 +1,7 @@
 # Results and output directories
 results/
 logs/
+.dev/
 
 # Snakemake
 .snakemake/

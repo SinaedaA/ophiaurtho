@@ -126,6 +126,10 @@ def main():
         pdf.normal_text("The following graph shows the distribution of protein descriptions for proteins, belonging to the same OrthoGroup as your target.")
         #### Plot Protein Descriptions ####
         cog_descriptions = get_protein_descriptions(cog, tf_data)
+        n_genes_in_cog = cog_descriptions["total"].iloc[0] if cog_descriptions.shape[0] > 0 else 0
+        if n_genes_in_cog == 0:
+            pdf.normal_text(f"No protein descriptions found for COG {cog}, skipping to next target.")
+            continue
         plt.figure(figsize=(8, 6)) # create figure object
         sns.set_style("white")
         sns.set_style("ticks")
@@ -133,14 +137,17 @@ def main():
         p.tick_params(labelsize=16)
         p.legend_.remove()
         p.set_ylabel("")
-        p.set_xlabel("Proportion of sequences in COG", fontsize=16)
+        p.set_xlabel("Percentage of sequences in COG (%)", fontsize=16)
         # Convert figure to image
         img_buf = BytesIO()
         plt.savefig(img_buf, dpi = 200, bbox_inches='tight')
         pdf.image(img_buf, w = 180, x = None, y = None, type = '', link = '')
         plt.close()
         pdf.write(5,"\n\n")
-
+        # Write total genes in COG
+        pdf.set_font("Arial", size=11)
+        pdf.cell(0, 10, f"Total genes in this OrthoGroup: {n_genes_in_cog}", ln=True)
+        
         ###### SUB-SUBTITLE -- DISTRIBUTION OF UPSTREAM REGION LENGTH ######
         pdf.subtitle2(f"{i}.2 Distribution of upstream region lengths in the OrthoGroup ({cog})")
         #### Description ####
@@ -279,7 +286,7 @@ def get_protein_descriptions(cog, tf_data):
     tf_df = pd.concat([tf_df, headers], ignore_index=True)
 
     tf_df['total'] = tf_df.groupby('cog')['count'].transform('sum')
-    tf_df['proportion'] = tf_df['count'] / tf_df['total']
+    tf_df['proportion'] = (tf_df['count'] / tf_df['total'])*100
     
     return tf_df
 
