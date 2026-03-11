@@ -224,7 +224,7 @@ def get_upstream_sequence(query_dict, fna_dict, reduced_gene_dict, stop_cds, len
             overlap, next_range = check_overlap(dic = reduced_gene_dict, lt = key_name, ups_range = ups_range)
             ## change extract_start if there is overlap and stop_cds is set to True in parameters
             if (overlap != None) and (stop_cds == 'True'):
-                print("Overlap detected between the desired upstream region range, and the next or previous gene... \nChanging the extraction coordinates because --stop-cds = True")
+                # print("Overlap detected between the desired upstream region range, and the next or previous gene... \nChanging the extraction coordinates because --stop-cds = True")
                 extract_start = overlap.start + 1
         if strand == '-':
             extract_start = start + 1
@@ -234,7 +234,7 @@ def get_upstream_sequence(query_dict, fna_dict, reduced_gene_dict, stop_cds, len
             overlap, next_range = check_overlap(dic = reduced_gene_dict, lt = key_name, ups_range = ups_range)
             ## change extract_start if there is overlap and stop_cds is set to True in parameters
             if (overlap != None) and (stop_cds == 'True'):
-                print("Overlap detected between the desired upstream region range, and the next or previous gene... \nChanging the extraction coordinates because --stop-cds = True")
+                # print("Overlap detected between the desired upstream region range, and the next or previous gene... \nChanging the extraction coordinates because --stop-cds = True")
                 extract_end = overlap.start - 1
         upstream_sequence = fna_dict[contig].seq[extract_start:extract_end]
         record = SeqRecord(upstream_sequence, id = locus_tag, description = f"[accession: {accession}] [contig: {contig}] [length: {len(upstream_sequence)}bp] [coordinates: {extract_start}:{extract_end}]")
