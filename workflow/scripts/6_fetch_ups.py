@@ -239,7 +239,7 @@ def get_upstream_sequence(query_dict, fna_dict, reduced_gene_dict, stop_cds, len
         upstream_sequence = fna_dict[contig].seq[extract_start:extract_end]
         record = SeqRecord(upstream_sequence, id = locus_tag, description = f"[accession: {accession}] [contig: {contig}] [length: {len(upstream_sequence)}bp] [coordinates: {extract_start}:{extract_end}]")
         ## Only append to upstream_sequences list, if the sequence is not of length 0 (cause MEME doesn't work if there are some headers that don't have a sequence)
-        if len(upstream_sequence) > 0:
+        if len(upstream_sequence) > 8:
             upstream_sequences.append(record)
         else:
             continue
